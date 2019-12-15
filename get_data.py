@@ -50,9 +50,6 @@ class GetData:
         self.random_index_list = [118, 919, 274, 866, 354, 253, 207, 667, 773, 563,
                                   553, 918, 934, 81, 56, 232, 892, 485, 30, 53]
 
-        self.X = []
-        self.Y = []
-        self.perts = []
         self.LmGenes = []
         self.meta_smiles = pd.read_csv('meta_SMILES.csv')
 
@@ -63,22 +60,30 @@ class GetData:
                 self.LmGenes.append(line.strip())
                 line = fp.readline()
 
-        self.representation_data = None
-        if len(csv_file) != 0:
-            self.representation_data = pd.read_csv(csv_file)
-
     def get_regression_data(self):
+        X = []
+        Y = []
+        perts = []
         unique_smiles = []
         counter = 1
+        data = None
+        if len(self.csv_file) != 0:
+            data = pd.read_csv(self.csv_file)
+
         for pert_id in self.L[self.cell_line]:
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
+            if str(smiles) == 'nan' or str(smiles) == '-666':
+                continue
             mol = Chem.MolFromSmiles(smiles)
             canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
-            if self.representation_data is not None:
-                feature = self.representation_data[self.representation_data.index == pert_id].values[0]
+            if data is not None:
+                if data[data['pert_id'] == pert_id].empty:
+                    continue
+                else:
+                    feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
                 print(str(counter) + ". iteration of " + self.descriptors)
                 print('len smiles: ' + str(len(canonical_smiles)))
@@ -87,12 +92,12 @@ class GetData:
 
             unique_smiles.append(canonical_smiles)
             labels = self.L[self.cell_line][pert_id]['chdirLm']
-            self.X.append(feature)
-            self.Y.append(labels)
-            self.perts.append(pert_id)
+            X.append(feature)
+            Y.append(labels)
+            perts.append(pert_id)
 
-        x = np.asarray(self.X)
-        y = np.asarray(self.Y)
+        x = np.asarray(X)
+        y = np.asarray(Y)
 
         x_columns = ['SMILES']
         if self.descriptors == 'ecfp':
@@ -117,8 +122,8 @@ class GetData:
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
-        x = pd.DataFrame(x, index=self.perts, columns=x_columns)
-        y = pd.DataFrame(y, index=self.perts)
+        x = pd.DataFrame(x, index=perts, columns=x_columns)
+        y = pd.DataFrame(y, index=perts)
         folds = list(KFold(self.n_fold, shuffle=True, random_state=self.random_state).split(x))
 
         if self.random_genes:
@@ -133,9 +138,16 @@ class GetData:
         return x, y, folds
 
     def get_up_genes(self):
+        X = []
+        Y = []
+        perts = []
         unique_smiles = []
         counter = 1
         class_dict = {}
+        data = None
+        if len(self.csv_file) != 0:
+            data = pd.read_csv(self.csv_file)
+
         for gene in self.LmGenes:
             class_dict.update({gene: 0})
 
@@ -144,13 +156,18 @@ class GetData:
                 continue
 
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
+            if str(smiles) == 'nan' or str(smiles) == '-666':
+                continue
             mol = Chem.MolFromSmiles(smiles)
             canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
-            if self.representation_data is not None:
-                feature = self.representation_data[self.representation_data.index == pert_id].values[0]
+            if data is not None:
+                if data[data['pert_id'] == pert_id].empty:
+                    continue
+                else:
+                    feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
                 print(str(counter) + ". iteration of " + self.descriptors)
                 print('len smiles: ' + str(len(canonical_smiles)))
@@ -166,12 +183,12 @@ class GetData:
                     class_dict.update({gene: 1})
 
             labels = np.fromiter(class_dict.values(), dtype=int)
-            self.X.append(feature)
-            self.Y.append(labels)
-            self.perts.append(pert_id)
+            X.append(feature)
+            Y.append(labels)
+            perts.append(pert_id)
 
-        x = np.asarray(self.X)
-        y = np.asarray(self.Y)
+        x = np.asarray(X)
+        y = np.asarray(Y)
 
         x_columns = ['SMILES']
         if self.descriptors == 'ecfp':
@@ -196,8 +213,8 @@ class GetData:
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
-        x = pd.DataFrame(x, index=self.perts, columns=x_columns)
-        y = pd.DataFrame(y, index=self.perts)
+        x = pd.DataFrame(x, index=perts, columns=x_columns)
+        y = pd.DataFrame(y, index=perts)
         folds = list(KFold(self.n_fold, shuffle=True, random_state=self.random_state).split(x))
 
         if self.random_genes:
@@ -212,9 +229,16 @@ class GetData:
         return x, y, folds
 
     def get_down_genes(self):
+        X = []
+        Y = []
+        perts = []
         unique_smiles = []
         counter = 1
         class_dict = {}
+        data = None
+        if len(self.csv_file) != 0:
+            data = pd.read_csv(self.csv_file)
+
         for gene in self.LmGenes:
             class_dict.update({gene: 0})
 
@@ -223,13 +247,18 @@ class GetData:
                 continue
 
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
+            if str(smiles) == 'nan' or str(smiles) == '-666':
+                continue
             mol = Chem.MolFromSmiles(smiles)
             canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
-            if self.representation_data is not None:
-                feature = self.representation_data[self.representation_data.index == pert_id].values[0]
+            if data is not None:
+                if data[data['pert_id'] == pert_id].empty:
+                    continue
+                else:
+                    feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
                 print(str(counter) + ". iteration of " + self.descriptors)
                 print('len smiles: ' + str(len(canonical_smiles)))
@@ -244,12 +273,12 @@ class GetData:
                     class_dict.update({gene: 1})
 
             labels = np.fromiter(class_dict.values(), dtype=int)
-            self.X.append(feature)
-            self.Y.append(labels)
-            self.perts.append(pert_id)
+            X.append(feature)
+            Y.append(labels)
+            perts.append(pert_id)
 
-        x = np.asarray(self.X)
-        y = np.asarray(self.Y)
+        x = np.asarray(X)
+        y = np.asarray(Y)
 
         x_columns = ['SMILES']
         if self.descriptors == 'ecfp':
@@ -274,8 +303,8 @@ class GetData:
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
-        x = pd.DataFrame(x, index=self.perts, columns=x_columns)
-        y = pd.DataFrame(y, index=self.perts)
+        x = pd.DataFrame(x, index=perts, columns=x_columns)
+        y = pd.DataFrame(y, index=perts)
         folds = list(KFold(self.n_fold, shuffle=True, random_state=self.random_state).split(x))
 
         if self.random_genes:

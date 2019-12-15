@@ -40,6 +40,7 @@ for i, (trn, val) in enumerate(folds) :
 
 Autoencoderdan tek tek representation almak uzun sürdüğü için önceden csv dosyasına kaydedilmiş
 representationları kullanabilmek için GetData sınıfına `csv_file` parametresi eklendi.
-Buraya indexi `pert_id` olan `SMILES` ve representation kolonları bulunan bir csv dosyası
+Buraya `pert_id`,`SMILES` ve representation kolonları bulunan bir csv dosyası
 verildiğinde bu dosyadan yararlanarak hızlı bir şekilde feature, target ve fold değerlerini GetData
-sınıfındaki metodları kullanarak alabiliyoruz.
+sınıfındaki metodları kullanarak alabiliyoruz. Eğer bu parametre kullanılmazsa istenilen representation
+tek tek çıkartılır.

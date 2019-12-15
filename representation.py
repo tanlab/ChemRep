@@ -54,6 +54,7 @@ class Representation:
 
     def get_representation(self, smiles, descriptor):
         representation = [smiles]
+  	mol = Chem.MolFromSmiles(smiles)
 
         if descriptor == "jtvae":
             for i in self.jtvae_representation([smiles])[0]:
@@ -64,6 +65,16 @@ class Representation:
             for i in self.ecfp_representation(([smiles])):
                 representation.append(i)
             return np.asarray(representation)
+
+	elif representation == "topological":
+	    topological = Chem.RDKFingerprint(mol, fpSize=1024).ToBitString()
+            topological = np.fromstring(topological,'u1') - ord('0')
+            return topological
+
+   	elif representation == "ecfp":
+            ecfp = AllChem.GetMorganFingerprintAsBitVect(mol,4,nBits=1024).ToBitString()       
+            ecfp = np.fromstring(ecfp,'u1') - ord('0')
+            return ecfp
 
     def ecfp_representation(self, dat):
         for smiles in dat:

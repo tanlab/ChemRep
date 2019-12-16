@@ -7,7 +7,7 @@ import numpy as np
 
 class GetData:
     
-    def __init__(self, L, cell_line, descriptors='jtvae', n_fold=5, random_state=0, random_genes=False, csv_file=""):
+    def __init__(self, L, cell_line, descriptor='jtvae', n_fold=5, random_state=0, random_genes=False, csv_file=""):
         """
             Parameters
             -----------
@@ -17,7 +17,7 @@ class GetData:
                 params:
                     string: 'VCAP', 'MCF7', 'PC3', etc.
 
-            descriptors: list of descriptors for chemical compounds.
+            descriptor: descriptor for chemical compounds.
                 params:
                     string: 'ecfp', 'ecfp_autoencoder', 'maccs', 'topological', 'shed', 'cats2d', 'jtvae'(default)
 
@@ -42,7 +42,7 @@ class GetData:
         
         self.L = L
         self.cell_line = cell_line
-        self.descriptors = descriptors
+        self.descriptor = descriptor
         self.n_fold = n_fold
         self.random_state = random_state
         self.random_genes = random_genes
@@ -59,18 +59,28 @@ class GetData:
             while line:
                 self.LmGenes.append(line.strip())
                 line = fp.readline()
+        
+        self.rep = Representation(self.descriptor)
 
     def get_regression_data(self):
         X = []
         Y = []
         perts = []
         unique_smiles = []
-        counter = 1
+        counter = 0
+        length = len(self.L[self.cell_line])
+        
+        print('Getting data...')
+        
         data = None
         if len(self.csv_file) != 0:
             data = pd.read_csv(self.csv_file)
 
         for pert_id in self.L[self.cell_line]:
+            counter += 1
+            if counter % 10 == 0:
+                print('%.1f %%    \r' % (counter / length * 100), end=""),
+                
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
             if str(smiles) == 'nan' or str(smiles) == '-666':
                 continue
@@ -85,10 +95,7 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                print(str(counter) + ". iteration of " + self.descriptors)
-                print('len smiles: ' + str(len(canonical_smiles)))
-                counter += 1
-                feature = Representation().get_representation(smiles=canonical_smiles, descriptor=self.descriptors)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
 
             unique_smiles.append(canonical_smiles)
             labels = self.L[self.cell_line][pert_id]['chdirLm']
@@ -100,25 +107,25 @@ class GetData:
         y = np.asarray(Y)
 
         x_columns = ['SMILES']
-        if self.descriptors == 'ecfp':
+        if self.descriptor == 'ecfp':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_' + str(i + 1))
-        elif self.descriptors == 'ecfp_autoencoder':
+        elif self.descriptor == 'ecfp_autoencoder':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_autoencoder_' + str(i + 1))
-        elif self.descriptors == 'topological':
+        elif self.descriptor == 'topological':
             for i in range(x.shape[1]-1):
                 x_columns.append('topological_' + str(i + 1))
-        elif self.descriptors == 'maccs':
+        elif self.descriptor == 'maccs':
             for i in range(x.shape[1]-1):
                 x_columns.append('maccs_' + str(i + 1))
-        elif self.descriptors == 'jtvae':
+        elif self.descriptor == 'jtvae':
             for i in range(x.shape[1]-1):
                 x_columns.append('jtvae_' + str(i + 1))
-        elif self.descriptors == 'shed':
+        elif self.descriptor == 'shed':
             for i in range(x.shape[1]-1):
                 x_columns.append('shed_' + str(i + 1))
-        elif self.descriptors == 'cats2d':
+        elif self.descriptor == 'cats2d':
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
@@ -135,6 +142,8 @@ class GetData:
                 df = pd.concat([df, y_random[i + 1]], axis=1)
             y = df
 
+        print('\nDone.')
+        
         return x, y, folds
 
     def get_up_genes(self):
@@ -142,7 +151,11 @@ class GetData:
         Y = []
         perts = []
         unique_smiles = []
-        counter = 1
+        counter = 0
+        length = len(self.L[self.cell_line])
+        
+        print('Getting data...')
+        
         class_dict = {}
         data = None
         if len(self.csv_file) != 0:
@@ -152,6 +165,10 @@ class GetData:
             class_dict.update({gene: 0})
 
         for pert_id in self.L[self.cell_line]:
+            counter += 1
+            if counter % 10 == 0:
+                print('%.1f %%    \r' % (counter / length * 100), end=""),
+                
             if 'upGenes' not in self.L[self.cell_line][pert_id]:
                 continue
 
@@ -169,10 +186,7 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                print(str(counter) + ". iteration of " + self.descriptors)
-                print('len smiles: ' + str(len(canonical_smiles)))
-                counter += 1
-                feature = Representation().get_representation(smiles=canonical_smiles, descriptor=self.descriptors)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
 
             unique_smiles.append(canonical_smiles)
             up_genes = list(set(self.L[self.cell_line][pert_id]['upGenes']))
@@ -191,25 +205,25 @@ class GetData:
         y = np.asarray(Y)
 
         x_columns = ['SMILES']
-        if self.descriptors == 'ecfp':
+        if self.descriptor == 'ecfp':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_' + str(i + 1))
-        elif self.descriptors == 'ecfp_autoencoder':
+        elif self.descriptor == 'ecfp_autoencoder':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_autoencoder_' + str(i + 1))
-        elif self.descriptors == 'topological':
+        elif self.descriptor == 'topological':
             for i in range(x.shape[1]-1):
                 x_columns.append('topological_' + str(i + 1))
-        elif self.descriptors == 'maccs':
+        elif self.descriptor == 'maccs':
             for i in range(x.shape[1]-1):
                 x_columns.append('maccs_' + str(i + 1))
-        elif self.descriptors == 'jtvae':
+        elif self.descriptor == 'jtvae':
             for i in range(x.shape[1]-1):
                 x_columns.append('jtvae_' + str(i + 1))
-        elif self.descriptors == 'shed':
+        elif self.descriptor == 'shed':
             for i in range(x.shape[1]-1):
                 x_columns.append('shed_' + str(i + 1))
-        elif self.descriptors == 'cats2d':
+        elif self.descriptor == 'cats2d':
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
@@ -226,6 +240,8 @@ class GetData:
                 df = pd.concat([df, y_random[i + 1]], axis=1)
             y = df
 
+        print('\nDone.')
+        
         return x, y, folds
 
     def get_down_genes(self):
@@ -233,7 +249,11 @@ class GetData:
         Y = []
         perts = []
         unique_smiles = []
-        counter = 1
+        counter = 0
+        length = len(self.L[self.cell_line])
+        
+        print('Getting data...')
+        
         class_dict = {}
         data = None
         if len(self.csv_file) != 0:
@@ -243,6 +263,10 @@ class GetData:
             class_dict.update({gene: 0})
 
         for pert_id in self.L[self.cell_line]:
+            counter += 1
+            if counter % 10 == 0:
+                print('%.1f %%    \r' % (counter / length * 100), end=""),
+                
             if 'dnGenes' not in self.L[self.cell_line][pert_id]:
                 continue
 
@@ -260,10 +284,7 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                print(str(counter) + ". iteration of " + self.descriptors)
-                print('len smiles: ' + str(len(canonical_smiles)))
-                counter += 1
-                feature = Representation().get_representation(smiles=canonical_smiles, descriptor=self.descriptors)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
 
             unique_smiles.append(canonical_smiles)
             dn_genes = list(set(self.L[self.cell_line][pert_id]['dnGenes']))
@@ -281,25 +302,25 @@ class GetData:
         y = np.asarray(Y)
 
         x_columns = ['SMILES']
-        if self.descriptors == 'ecfp':
+        if self.descriptor == 'ecfp':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_' + str(i + 1))
-        elif self.descriptors == 'ecfp_autoencoder':
+        elif self.descriptor == 'ecfp_autoencoder':
             for i in range(x.shape[1]-1):
                 x_columns.append('ecfp_autoencoder_' + str(i + 1))
-        elif self.descriptors == 'topological':
+        elif self.descriptor == 'topological':
             for i in range(x.shape[1]-1):
                 x_columns.append('topological_' + str(i + 1))
-        elif self.descriptors == 'maccs':
+        elif self.descriptor == 'maccs':
             for i in range(x.shape[1]-1):
                 x_columns.append('maccs_' + str(i + 1))
-        elif self.descriptors == 'jtvae':
+        elif self.descriptor == 'jtvae':
             for i in range(x.shape[1]-1):
                 x_columns.append('jtvae_' + str(i + 1))
-        elif self.descriptors == 'shed':
+        elif self.descriptor == 'shed':
             for i in range(x.shape[1]-1):
                 x_columns.append('shed_' + str(i + 1))
-        elif self.descriptors == 'cats2d':
+        elif self.descriptor == 'cats2d':
             for i in range(x.shape[1]-1):
                 x_columns.append('cats2d_' + str(i + 1))
 
@@ -316,4 +337,6 @@ class GetData:
                 df = pd.concat([df, y_random[i + 1]], axis=1)
             y = df
 
+        print('\nDone.')    
+            
         return x, y, folds

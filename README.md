@@ -15,7 +15,7 @@ import json
 with open('L1000CDS_subset.json', 'r') as f:
     L = json.load(f)
 
-obj = GetData(L=L, cell_line='VCAP', descriptors='jtvae', n_fold=5, random_state=42,
+obj = GetData(L=L, cell_line='VCAP', descriptor='jtvae', n_fold=5, random_state=42,
               random_genes=False, csv_file='VCAP_jtvae.csv')
 
 x, y, folds = obj.get_down_genes()

@@ -2,6 +2,7 @@ from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import model_from_yaml
 from rdkit.Chem import AllChem
 from optparse import OptionParser
+from rdkit.Chem import MACCSkeys, AllChem
 import rdkit
 import rdkit.Chem as Chem
 import torch
@@ -85,6 +86,13 @@ class Representation:
             ecfp = AllChem.GetMorganFingerprintAsBitVect(mol, 3, nBits=1024).ToBitString()
             ecfp = np.fromstring(ecfp,'u1') - ord('0')
             for i in ecfp:
+                representation.append(i)
+            return np.asarray(representation)
+
+        elif descriptor == "maccs":
+            maccs = MACCSkeys.GenMACCSKeys(mol).ToBitString()
+            maccs = np.fromstring(maccs,'u1') - ord('0')
+            for i in maccs:
                 representation.append(i)
             return np.asarray(representation)
 

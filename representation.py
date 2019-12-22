@@ -2,21 +2,20 @@ from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import model_from_yaml
 from rdkit.Chem import AllChem
 from optparse import OptionParser
-from rdkit.Chem import MACCSkeys, AllChem
 import rdkit
 import rdkit.Chem as Chem
 import torch
 import pandas as pd
 import numpy as np
-import sys
-
+import sys	
+import subprocess
+import os
 sys.path.append('jtnn/')
 from jtnn import *
 sys.path.append('../')
 
-
 class Representation:
-
+   
     def __init__(self, descriptor='jtvae'):
         self.descriptor = descriptor
         self.loaded_model = None
@@ -96,6 +95,43 @@ class Representation:
                 representation.append(i)
             return np.asarray(representation)
 
+        elif descriptor == "shed":
+            smi = smiles
+            mols = Chem.MolFromSmiles(smi) 
+            hmols = Chem.AddHs(mols)
+            AllChem.EmbedMolecule(hmols,AllChem.ETKDG())
+            writer = Chem.SDWriter('smiles.sdf')
+            hmols.SetProp("_SMILES","%s"%smi)
+            writer.write(hmols)
+            writer.close()
+            shell = subprocess.call(["./shed.sh"])
+            data = pd.read_csv("myout1.csv" ,delimiter = "\t",sep = ":", header= None)
+            for i in data.columns.values:
+                if str(data.iloc[0][i]).find(":")!=-1:
+                    data.iloc[0][i]=data.iloc[0][i][str(data.iloc[0][i]).find(":")+1:]
+                    representation.append(data.iloc[0][i])
+            delete = subprocess.call(["./delete.sh"])
+            return np.asarray(representation)
+
+        elif descriptor == "cats2d":
+            smi = smiles
+            mols = Chem.MolFromSmiles(smi) 
+            hmols = Chem.AddHs(mols)
+            AllChem.EmbedMolecule(hmols,AllChem.ETKDG())
+            writer = Chem.SDWriter('smiles.sdf')
+            hmols.SetProp("_SMILES","%s"%smi)
+            writer.write(hmols)
+            writer.close()
+            shell = subprocess.call(["./cats2d.sh"])
+            data = pd.read_csv("myout1.csv" ,delimiter = "\t",sep = ":", header= None)
+            for i in data.columns.values:
+                if str(data.iloc[0][i]).find(":")!=-1:
+                    data.iloc[0][i]=data.iloc[0][i][str(data.iloc[0][i]).find(":")+1:]
+                    representation.append(data.iloc[0][i])
+            subprocess.call(["./delete.sh"])
+            return np.asarray(representation)
+
+    
     def ecfp_representation(self, smiles, mol):
         fp1 = AllChem.GetMorganFingerprintAsBitVect(mol, 3, nBits=1024)
         a = np.asarray(fp1)

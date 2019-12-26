@@ -23,7 +23,7 @@ cp $optionInputFile "$optionOutputDir/inputFile.sdf"
 inputFile="$optionOutputDir/inputFile.sdf"
 fileNr=1
 outputFile="$optionOutputDir/myout$fileNr.csv"
-java -jar $HOME/myprogs/jCMapperCLI.jar -c $optionAlgorithm -hs 2147483647 -a $optionAtomType -f $inputFile -o $outputFile  -l $optionLabel -ff $optionOutputFormat
+java -jar myprogs/jCMapperCLI.jar -c $optionAlgorithm -hs 2147483647 -a $optionAtomType -f $inputFile -o $outputFile  -l $optionLabel -ff $optionOutputFormat
 cnt=1
 
 oldFile=$outputFile
@@ -47,7 +47,7 @@ while [ 1 -gt 0 ]; do
       exit
     fi
     tail -n $catLines $optionInputFile > $inputFile
-    java -jar $HOME/myprogs/jCMapperCLI.jar -c $optionAlgorithm -hs 2147483647 -a $optionAtomType -f $inputFile -o $outputFile -l $optionLabel -ff $optionOutputFormat
+    java -jar myprogs/jCMapperCLI.jar -c $optionAlgorithm -hs 2147483647 -a $optionAtomType -f $inputFile -o $outputFile -l $optionLabel -ff $optionOutputFormat
     cnt=`expr $cnt + 1`
   done
   oldFile=$outputFile

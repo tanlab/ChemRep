@@ -1,6 +1,7 @@
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import model_from_yaml
 from rdkit.Chem import AllChem
+from rdkit.Chem import MACCSkeys
 from optparse import OptionParser
 import rdkit
 import rdkit.Chem as Chem

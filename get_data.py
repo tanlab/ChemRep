@@ -3,11 +3,13 @@ from rdkit import Chem
 from representation import Representation
 import pandas as pd
 import numpy as np
+import sys
 
 
 class GetData:
     
-    def __init__(self, L, cell_line, descriptor='jtvae', n_fold=5, random_state=0, random_genes=False, csv_file=""):
+    def __init__(self, L, cell_line, descriptor='jtvae', n_fold=5, random_state=0, random_genes=False,
+                 csv_file="", useChirality=False):
         """
             Parameters
             -----------
@@ -15,7 +17,7 @@ class GetData:
 
             cell_line: cell_id
                 params:
-                    string: 'VCAP', 'MCF7', 'PC3', etc.
+                    string: 'VCAP', 'A549', 'A375', 'PC3', 'MCF7', 'HT29', etc.
 
             descriptor: descriptor for chemical compounds.
                 params:
@@ -47,6 +49,11 @@ class GetData:
         self.random_state = random_state
         self.random_genes = random_genes
         self.csv_file = csv_file
+        self.useChirality = useChirality
+        
+        if self.useChirality and self.descriptor != 'ecfp':
+            sys.exit('useChirality parameter is only usable with ecfp descriptor.')
+            
         self.random_index_list = [118, 919, 274, 866, 354, 253, 207, 667, 773, 563,
                                   553, 918, 934, 81, 56, 232, 892, 485, 30, 53]
 
@@ -84,8 +91,12 @@ class GetData:
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
             if str(smiles) == 'nan' or str(smiles) == '-666':
                 continue
-            mol = Chem.MolFromSmiles(smiles)
-            canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+
+            if not self.useChirality:
+                mol = Chem.MolFromSmiles(smiles)
+                canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+            else:
+                canonical_smiles = smiles
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
@@ -95,7 +106,8 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor,
+                                                      useChirality=self.useChirality)
 
             unique_smiles.append(canonical_smiles)
             labels = self.L[self.cell_line][pert_id]['chdirLm']
@@ -175,8 +187,12 @@ class GetData:
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
             if str(smiles) == 'nan' or str(smiles) == '-666':
                 continue
-            mol = Chem.MolFromSmiles(smiles)
-            canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+
+            if not self.useChirality:
+                mol = Chem.MolFromSmiles(smiles)
+                canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+            else:
+                canonical_smiles = smiles
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
@@ -186,7 +202,8 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor,
+                                                      useChirality=self.useChirality)
 
             unique_smiles.append(canonical_smiles)
             up_genes = list(set(self.L[self.cell_line][pert_id]['upGenes']))
@@ -273,8 +290,12 @@ class GetData:
             smiles = self.meta_smiles[self.meta_smiles['pert_id'] == pert_id]['SMILES'].values[0]
             if str(smiles) == 'nan' or str(smiles) == '-666':
                 continue
-            mol = Chem.MolFromSmiles(smiles)
-            canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+
+            if not self.useChirality:
+                mol = Chem.MolFromSmiles(smiles)
+                canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+            else:
+                canonical_smiles = smiles
 
             if canonical_smiles in unique_smiles or len(canonical_smiles) > 120:
                 continue
@@ -284,7 +305,8 @@ class GetData:
                 else:
                     feature = data[data['pert_id'] == pert_id].drop(['pert_id'], axis=1).values[0].tolist()
             else:
-                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor)
+                feature = self.rep.get_representation(smiles=canonical_smiles, descriptor=self.descriptor,
+                                                      useChirality=self.useChirality)
 
             unique_smiles.append(canonical_smiles)
             dn_genes = list(set(self.L[self.cell_line][pert_id]['dnGenes']))

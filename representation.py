@@ -8,7 +8,7 @@ import rdkit.Chem as Chem
 import torch
 import pandas as pd
 import numpy as np
-import sys	
+import sys
 import subprocess
 import os
 sys.path.append('jtnn/')
@@ -59,7 +59,7 @@ class Representation:
 
             self.model = model.cuda()
 
-    def get_representation(self, smiles, descriptor):
+    def get_representation(self, smiles, descriptor, useChirality=False):
         representation = [smiles]
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
@@ -83,7 +83,8 @@ class Representation:
             return np.asarray(representation)
 
         elif descriptor == "ecfp":
-            ecfp = AllChem.GetMorganFingerprintAsBitVect(mol, 3, nBits=1024).ToBitString()
+            ecfp = AllChem.GetMorganFingerprintAsBitVect(mol, 3, nBits=1024,
+                                                         useChirality=useChirality).ToBitString()
             ecfp = np.fromstring(ecfp,'u1') - ord('0')
             for i in ecfp:
                 representation.append(i)
